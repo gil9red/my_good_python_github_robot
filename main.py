@@ -50,7 +50,7 @@ if __name__ == '__main__':
                 if match:
                     email = li.select('span.css-truncate-target')
                     if email:
-                        print(email[0].text)
+                        return email[0].text
                     else:
                         raise NotFoundEmail()
 
