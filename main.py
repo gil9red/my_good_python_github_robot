@@ -61,6 +61,57 @@ def get_email(browser, login):
     return None
 
 
+def search_login_and_path(browser, url_pattern, find_users_dict):
+    page = 1
+    max_page = None
+
+    while True:
+        log.debug('Load search %s page: %s', page, url_pattern.format(page))
+        browser.open(url_pattern.format(page))
+
+        if 'You have triggered an abuse detection mechanism.' in browser.response.text:
+            timeout = 15
+            log.debug('"You have triggered an abuse detection mechanism. Please wait '
+                      'a few minutes before you try again.", wait %s seconds.', timeout)
+            time.sleep(timeout)
+            continue
+
+        # Init only on first page
+        if max_page is None:
+            max_page = int(browser.select('.pagination a')[-2].text)
+
+        for item in browser.select('.code-list > .code-list-item'):
+            title = item.select('.title a')[1]
+            from urllib.parse import urljoin
+
+            href = title['href']
+            user = href.split('/')[1]
+            url_file = urljoin(browser.url, href)
+            code = ''.join(code.text.strip() for code in item.select('.file-box .blob-code'))
+            print(user, url_file)
+            print(code)
+
+            for pattern in login_and_pass_patterns:
+                for login, password in pattern.findall(code):
+                    print(user, password)
+                    find_users_dict[login, password] = (user, url_file)
+
+                    # match = pattern.search(code)
+                    # if match:
+                    #     login, password = match.group(1), match.group(2)
+                    #     print(user, password)
+                    #     find_users.add((user, login, password, url_file))
+
+            print()
+
+        if page >= max_page:
+            log.debug('Last search page')
+            break
+
+        page += 1
+        # break
+
+
 if __name__ == '__main__':
     log.debug('User agent: %s', USER_AGENT)
 
@@ -73,6 +124,58 @@ if __name__ == '__main__':
     auth_is_successful = check_auth(browser, LOGIN, PASSWORD)
     log.debug('Authorization successful' if auth_is_successful else 'Authorization is not successful')
 
+    # if auth_is_successful:
+    #     email = get_email(browser, LOGIN)
+    #     log.debug('Email: %s', email)
+
+    import re
+    import time
+
+    login_and_pass_patterns = [
+        # re.compile(r'''auth\s*=\s*\(['"](.+?)['"],\s*['"](.+?)['"]\)\s*\)'''),
+        # re.compile(r'''HTTPBasicAuth\s*\(['"](.+?)['"],\s*['"](.+?)['"]\)\s*\)'''),
+        # re.compile(r'''HTTPDigestAuth\s*\(['"](.+?)['"],\s*['"](.+?)['"]\)\s*\)'''),
+        re.compile(r'''HTTP\w+Auth\s*\(['"](.+?)['"],\s*['"](.+?)['"]\)\s*\)'''),
+
+        re.compile(r'''auth\s*=\s*\w*?\s*\(['"](.+?)['"],\s*['"](.+?)['"]\)\s*\)'''),
+    ]
+
+#     text = '''
+# # -*- coding:utf-8 -*-import requestsfrom requests.auth import AuthBasefrom requests.auth import HTTPBasicAuth# r = requests.get('https://api.github.com/user', auth=HTTPBasicAuth('user', 'pass'))# 直接使用r = requests.get('https://api.github.com/user', auth=('johnChnia', 'zhouqiang8520604'))
+#     '''
+#
+#     text = ' '.join(row.strip() for row in text.split('\n'))
+#     # print(text)
+#
+#     find_users = set()
+#
+#     for pattern in login_and_pass_patterns:
+#         print(pattern.findall(text))
+#         for i in pattern.findall(text):
+#             find_users.add(i)
+#
+#     print(find_users)
+#
+#     quit()
+
     if auth_is_successful:
-        email = get_email(browser, LOGIN)
-        log.debug('Email: %s', email)
+        find_users_dict = dict()
+
+        URL_GITHUB_SEARCH_MATCH = 'https://github.com/search?p={}&q=requests+auth+github+filename%3A.py' \
+                                  '&ref=searchresults&type=Code&utf8=%E2%9C%93'
+
+        URL_GITHUB_SEARCH_RECENTLY_INDEXED = 'https://github.com/search?p={}&o=desc&q=requests+auth+github+filename' \
+                                             '%3A.py&ref=searchresults&s=indexed&type=Code&utf8=%E2%9C%93'
+
+        URL_GITHUB_SEARCH_LEAST_RECENTLY_INDEXED = 'https://github.com/search?p={}&o=asc&q=requests+auth+github+' \
+                                                   'filename%3A.py&ref=searchresults&s=indexed&type=Code&utf8=%E2%9C%93'
+
+        search_login_and_path(browser, URL_GITHUB_SEARCH_MATCH, find_users_dict)
+        search_login_and_path(browser, URL_GITHUB_SEARCH_RECENTLY_INDEXED, find_users_dict)
+        search_login_and_path(browser, URL_GITHUB_SEARCH_LEAST_RECENTLY_INDEXED, find_users_dict)
+
+    print('\n\n', '-' * 50, '\n\n')
+    # print(find_users_dict)
+
+    for i, ((login, password), (user, url_file)) in enumerate(find_users_dict.items(), 1):
+        print('{}. "{}", {}/{}: {}'.format(i, user, login, password, url_file))
