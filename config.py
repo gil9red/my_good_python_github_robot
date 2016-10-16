@@ -11,6 +11,22 @@ MY_GITHUB_PASSWORD = '<PASSWORD>'
 # http://user:password@proxy_host:proxy_port
 PROXY = None
 
+# Our email
+MY_EMAIL_LOGIN = '<EMAIL_LOGIN>'
+MY_EMAIL_PASSWORD = '<EMAIL_PASSWORD>'
+EMAIL_DEBUG = False
+
+SUBJECT_EMAIL = 'I found your username and password from github'
+PATTERN_EMAIL = """
+Hi, I'm <b>Good Robot</b>!<br>
+I found your login and password on github here:
+{}
+
+<hr>
+<a href="https://github.com/gil9red/my_good_python_github_robot">My project here</a>
+
+"""
+
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0'
 
 URL_GITHUB = 'https://github.com/'
