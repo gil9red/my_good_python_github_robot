@@ -5,8 +5,11 @@ __author__ = 'ipetrash'
 
 
 # Search by code without auth not working
-LOGIN = '<LOGIN>'
-PASSWORD = '<PASSWORD>'
+MY_GITHUB_LOGIN = '<LOGIN>'
+MY_GITHUB_PASSWORD = '<PASSWORD>'
+
+# http://user:password@proxy_host:proxy_port
+PROXY = None
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0'
 
